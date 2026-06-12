@@ -1,0 +1,123 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IGmxReader",
+  "sourceName": "src/interfaces/IGmxReader.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "dataStore",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "key",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getPosition",
+      "outputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "market",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "collateralToken",
+                  "type": "address"
+                }
+              ],
+              "internalType": "struct IGmxReader.PositionAddresses",
+              "name": "addresses",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "sizeInUsd",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "sizeInTokens",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateralAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "borrowingFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "fundingFeeAmountPerSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "longTokenClaimableFundingAmountPerSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "shortTokenClaimableFundingAmountPerSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "increasedAtTime",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "decreasedAtTime",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IGmxReader.PositionNumbers",
+              "name": "numbers",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bool",
+                  "name": "isLong",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct IGmxReader.PositionFlags",
+              "name": "flags",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IGmxReader.PositionProps",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

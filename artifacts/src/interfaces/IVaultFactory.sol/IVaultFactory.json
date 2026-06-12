@@ -1,0 +1,242 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IVaultFactory",
+  "sourceName": "src/interfaces/IVaultFactory.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "oracle",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "rToken",
+          "type": "address"
+        }
+      ],
+      "name": "MarketAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "vault",
+          "type": "address"
+        }
+      ],
+      "name": "VaultCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "createVault",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "vault",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "gmxAdapter",
+      "outputs": [
+        {
+          "internalType": "contract IGmxAdapter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "vault",
+          "type": "address"
+        }
+      ],
+      "name": "isVault",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "markets",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        },
+        {
+          "internalType": "address",
+          "name": "oracle",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "rToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint16",
+          "name": "maxLtv1xBps",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint16",
+          "name": "bufferBps",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint16",
+          "name": "maxLtvAtMaxLevBps",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint8",
+          "name": "flatTier",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "maxLeverage",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "int256",
+          "name": "delta",
+          "type": "int256"
+        }
+      ],
+      "name": "onCollateralChanged",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalCollateralLocked",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "usdc",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "vaultOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

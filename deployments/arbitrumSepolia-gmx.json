@@ -1,0 +1,23 @@
+{
+  "profile": "arbitrumSepolia-gmx",
+  "chainId": 421614,
+  "vaultFactory": "0x9Cf1cECf0d9eBc345aa1A32643aDc74E0A1bBc6c",
+  "positionVaultImpl": "0x76F080128cA734413A3eB422eaBCe1e2B9eFf50f",
+  "gmxAdapter": "0xbCA0eE816cF866bb2F5c995Ec1d4517A57D89433",
+  "usdc": "0x3253a335E7bFfB4790Aa4C25C4250d206E9b9773",
+  "gmxExchangeRouter": "0xEd50B2A1eF0C35DAaF08Da6486971180237909c3",
+  "gmxReader": "0x4750376b9378294138Cf7B7D69a2d243f4940f71",
+  "gmxDataStore": "0xCF4c2C4c53157BcC01A596e3788fFF69cBBCD201",
+  "gmxOrderVault": "0x1b8AC606de71686fd2a1AEDEcb6E0EFba28909a2",
+  "markets": {
+    "rETH": {
+      "marketId": "0xfa2f5443c5162620a75653c3715645203733476b53f20f277072022ebb01c40a",
+      "oracle": "0xE2fB60f17c158152a231B874CD27E2E27686802A",
+      "rToken": "0x15c3D4A3a721784Fe248A464f9C645BAA1Ca82ef",
+      "swapPool": "0xd643F9063656a5FB9449aE463bc4ECC09cf7913D",
+      "gmxMarket": "0xb6fC4C9eB02C35A134044526C62bb15014Ac0Bcc",
+      "maxLtvBps": 8000,
+      "lltvBps": 9000
+    }
+  }
+}

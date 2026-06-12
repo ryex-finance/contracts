@@ -1,0 +1,15 @@
+{
+  "network": "arbitrumSepolia",
+  "deployer": "0x8A3Be22fB5cFD54a436C5ebEa63f40062B0E8856",
+  "weth9": "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73",
+  "factory": "0x2d49265deaD5111Cd7317465cA42610107746E30",
+  "swapRouter": "0xed590dcC35DF47591A922134E8814603E690424D",
+  "nftDescriptorLibrary": "0xA185717Afe527063cdbb1575c34bd67bC4Be0C1D",
+  "positionDescriptor": "0x862aC37599F98e6b39F0Dc51849B2FFaeC6afD93",
+  "nonfungiblePositionManager": "0xeA376420aaf74F10d96e29AC14d4a279DbE2Ee19",
+  "quoter": "0xc33e72c246eeCA5607E36c2AbC505bde7b6858e3",
+  "quoterV2": "0x47cc02DBC83b6DfDabC292058934F1599626439f",
+  "tickLens": "0xe8322B3702C9a0B559433dC5c07E980B510a1307",
+  "mockTokenA": "",
+  "mockTokenB": ""
+}

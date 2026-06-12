@@ -1,0 +1,11 @@
+{
+  "network": "arbitrumSepolia",
+  "deployer": "0x8A3Be22fB5cFD54a436C5ebEa63f40062B0E8856",
+  "tokens": {
+    "rBTC": "0x50F1525302773D2f44B9D529597afCd93B2Df301",
+    "rETH": "0x53e0b51976116cdC679c3a874b43eD5D7e2662c2",
+    "rHYPE": "0xb3CD94877598C5e42bE40bfb711CaBe0b2e08BAb",
+    "rSOL": "0x871568F4308EaeD2ddFD9F0277102b946Eb332a7",
+    "USDC": "0xEBF811a6d749eaB7f1E57c15BfdcDfd94BAa80ab"
+  }
+}

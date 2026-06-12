@@ -1,0 +1,292 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IGmxAdapter",
+  "sourceName": "src/interfaces/IGmxAdapter.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "positionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "createCloseOrder",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orderKey",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "collateralUsdc",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "triggerPrice8",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "leverage",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isLong",
+          "type": "bool"
+        }
+      ],
+      "name": "createLimitOrder",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orderKey",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "collateralUsdc",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "indexPrice8",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "leverage",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isLong",
+          "type": "bool"
+        }
+      ],
+      "name": "createOpenOrder",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orderKey",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "positionKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "triggerPrice8",
+          "type": "uint256"
+        }
+      ],
+      "name": "createStopLoss",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orderKey",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "positionKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "triggerPrice8",
+          "type": "uint256"
+        }
+      ],
+      "name": "createTakeProfit",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orderKey",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "positionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getPositionValueUsd",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "valueWad",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "vault",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bool",
+          "name": "isLong",
+          "type": "bool"
+        }
+      ],
+      "name": "gmxPositionData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "exists",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "sizeInUsd",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "entryPrice8",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IGmxAdapter.GmxPositionData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "marketId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bool",
+          "name": "isLong",
+          "type": "bool"
+        }
+      ],
+      "name": "positionKey",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "positionKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "withdrawUsdc",
+          "type": "uint256"
+        }
+      ],
+      "name": "reducePosition",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "paidUsdc",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "ryexOrderKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "requestCancellation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

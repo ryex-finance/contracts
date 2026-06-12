@@ -1,0 +1,17 @@
+{
+  "network": "arbitrumSepolia",
+  "signer": "0x8A3Be22fB5cFD54a436C5ebEa63f40062B0E8856",
+  "fee": 3000,
+  "prices": {
+    "rBTC/USDC": 75000,
+    "rETH/USDC": 2300,
+    "rSOL/USDC": 85,
+    "rHYPE/USDC": 44
+  },
+  "pools": {
+    "rBTC/USDC": "0xA5d7E8CCD97df8d1C6393e4236d96053Dcf914C6",
+    "rETH/USDC": "0x78EC1FcF483C35c874090CBf30fb93FFE23DeAea",
+    "rSOL/USDC": "0x67C581625D677674d9A3E942D9B46811FBfD4520",
+    "rHYPE/USDC": "0xAb2e6EF3e32eFA3Ce37d9cBfc4114A8dF4Ad515c"
+  }
+}
