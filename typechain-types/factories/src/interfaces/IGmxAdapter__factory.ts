@@ -115,6 +115,35 @@ const _abi = [
       },
       {
         internalType: "uint256",
+        name: "withdrawUsdc",
+        type: "uint256",
+      },
+    ],
+    name: "createRedeemOrder",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "orderKey",
+        type: "bytes32",
+      },
+      {
+        internalType: "uint256",
+        name: "paidUsdc",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "positionKey",
+        type: "bytes32",
+      },
+      {
+        internalType: "uint256",
         name: "triggerPrice8",
         type: "uint256",
       },
@@ -251,30 +280,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "positionKey",
-        type: "bytes32",
-      },
-      {
-        internalType: "uint256",
-        name: "withdrawUsdc",
-        type: "uint256",
-      },
-    ],
-    name: "reducePosition",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "paidUsdc",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {

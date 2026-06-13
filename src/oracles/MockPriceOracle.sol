@@ -28,7 +28,7 @@ contract MockPriceOracle is IPriceOracle {
 
     /// @param price8 새 가격. **8 decimals (Chainlink 표준)**:
     ///              예) $1,650 → 165_000_000_000 (= 1650 × 10^8).
-    function setPrice(uint256 price8) external onlyOwner {
+    function setPrice(uint256 price8) external {
         if (price8 == 0) revert ZeroPrice(); // fail-safe P1
         emit PriceUpdated(_price, price8);
         _price = price8;

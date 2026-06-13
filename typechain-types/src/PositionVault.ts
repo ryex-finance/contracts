@@ -225,6 +225,9 @@ export interface PositionVaultInterface extends Interface {
       | "owner"
       | "pending"
       | "pendingFeesUsdc"
+      | "pendingRedeemAmt"
+      | "pendingRedeemUsdcSnap"
+      | "pendingRedeemer"
       | "posKey"
       | "rToken"
       | "redeem"
@@ -256,6 +259,7 @@ export interface PositionVaultInterface extends Interface {
       | "PositionOpened"
       | "RBTCMinted"
       | "RBTCRepaid"
+      | "RedeemRequested"
       | "Redeemed"
       | "StopLossSet"
       | "StuckOrderRecovered"
@@ -387,6 +391,18 @@ export interface PositionVaultInterface extends Interface {
   encodeFunctionData(functionFragment: "pending", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "pendingFeesUsdc",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "pendingRedeemAmt",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "pendingRedeemUsdcSnap",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "pendingRedeemer",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "posKey", values?: undefined): string;
@@ -522,6 +538,18 @@ export interface PositionVaultInterface extends Interface {
   decodeFunctionResult(functionFragment: "pending", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "pendingFeesUsdc",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "pendingRedeemAmt",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "pendingRedeemUsdcSnap",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "pendingRedeemer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "posKey", data: BytesLike): Result;
@@ -753,6 +781,31 @@ export namespace RBTCRepaidEvent {
   export interface OutputObject {
     vault: string;
     amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RedeemRequestedEvent {
+  export type InputTuple = [
+    vault: AddressLike,
+    redeemer: AddressLike,
+    orderKey: BytesLike,
+    rTokenAmount: BigNumberish
+  ];
+  export type OutputTuple = [
+    vault: string,
+    redeemer: string,
+    orderKey: string,
+    rTokenAmount: bigint
+  ];
+  export interface OutputObject {
+    vault: string;
+    redeemer: string;
+    orderKey: string;
+    rTokenAmount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -1015,15 +1068,17 @@ export interface PositionVault extends BaseContract {
 
   pendingFeesUsdc: TypedContractMethod<[], [bigint], "view">;
 
+  pendingRedeemAmt: TypedContractMethod<[], [bigint], "view">;
+
+  pendingRedeemUsdcSnap: TypedContractMethod<[], [bigint], "view">;
+
+  pendingRedeemer: TypedContractMethod<[], [string], "view">;
+
   posKey: TypedContractMethod<[], [string], "view">;
 
   rToken: TypedContractMethod<[], [string], "view">;
 
-  redeem: TypedContractMethod<
-    [rTokenAmount: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
+  redeem: TypedContractMethod<[rTokenAmount: BigNumberish], [void], "payable">;
 
   repay: TypedContractMethod<[rBtcAmount: BigNumberish], [void], "nonpayable">;
 
@@ -1213,6 +1268,15 @@ export interface PositionVault extends BaseContract {
     nameOrSignature: "pendingFeesUsdc"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "pendingRedeemAmt"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "pendingRedeemUsdcSnap"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "pendingRedeemer"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "posKey"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -1220,7 +1284,7 @@ export interface PositionVault extends BaseContract {
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "redeem"
-  ): TypedContractMethod<[rTokenAmount: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<[rTokenAmount: BigNumberish], [void], "payable">;
   getFunction(
     nameOrSignature: "repay"
   ): TypedContractMethod<[rBtcAmount: BigNumberish], [void], "nonpayable">;
@@ -1349,6 +1413,13 @@ export interface PositionVault extends BaseContract {
     RBTCRepaidEvent.InputTuple,
     RBTCRepaidEvent.OutputTuple,
     RBTCRepaidEvent.OutputObject
+  >;
+  getEvent(
+    key: "RedeemRequested"
+  ): TypedContractEvent<
+    RedeemRequestedEvent.InputTuple,
+    RedeemRequestedEvent.OutputTuple,
+    RedeemRequestedEvent.OutputObject
   >;
   getEvent(
     key: "Redeemed"
@@ -1532,6 +1603,17 @@ export interface PositionVault extends BaseContract {
       RBTCRepaidEvent.InputTuple,
       RBTCRepaidEvent.OutputTuple,
       RBTCRepaidEvent.OutputObject
+    >;
+
+    "RedeemRequested(address,address,bytes32,uint256)": TypedContractEvent<
+      RedeemRequestedEvent.InputTuple,
+      RedeemRequestedEvent.OutputTuple,
+      RedeemRequestedEvent.OutputObject
+    >;
+    RedeemRequested: TypedContractEvent<
+      RedeemRequestedEvent.InputTuple,
+      RedeemRequestedEvent.OutputTuple,
+      RedeemRequestedEvent.OutputObject
     >;
 
     "Redeemed(address,address,uint256,uint256,uint256)": TypedContractEvent<

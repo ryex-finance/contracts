@@ -46,8 +46,13 @@ interface IGmxAdapter {
     /// @notice 포지션 전량 close(청산) 주문 생성.
     function createCloseOrder(bytes32 positionKey) external payable returns (bytes32 orderKey);
 
-    /// @notice RLT 상환용 동기 부분청산. equity를 withdrawUsdc 만큼 줄이고 USDC를 Vault로 송금.
-    function reducePosition(bytes32 positionKey, uint256 withdrawUsdc) external returns (uint256 paidUsdc);
+    /// @notice RLT 상환용 GMX partial MarketDecrease 주문. 체결 시 USDC를 Vault로 송금.
+    /// @return orderKey RYex 주문 키
+    /// @return paidUsdc mock-only 즉시 지급액(0이면 GMX 콜백 대기)
+    function createRedeemOrder(bytes32 positionKey, uint256 withdrawUsdc)
+        external
+        payable
+        returns (bytes32 orderKey, uint256 paidUsdc);
 
     // ── 포지션 조회 ──────────────────────────────────────────────────────────────
 

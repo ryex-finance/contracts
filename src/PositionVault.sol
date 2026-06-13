@@ -60,6 +60,10 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
     bytes32 public posKey;
     address public liquidator; // 청산 보상 수령자
 
+    address public pendingRedeemer; // RLT redeem 대기 중 rToken 제출자
+    uint256 public pendingRedeemAmt; // escrow rToken (18dec)
+    uint256 public pendingRedeemUsdcSnap; // redeem 정산 시 증가분만 회수
+
     uint256 public accruedFeesUsdc; // 누적 프로토콜 수수료(USDC 6dec): borrow+mint+redeem. close/liquidate 시 정산.
     uint256 public lastAccrual; // 마지막 borrow-fee 적립 시각 (포지션 Active 시 시작)
 
@@ -84,6 +88,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
     event StuckOrderRecovered(address indexed vault, bytes32 orderKey);
     event FeesSettled(address indexed vault, uint256 toTreasuryUsdc);
     event Redeemed(address indexed vault, address indexed redeemer, uint256 rTokenAmount, uint256 usdcOut, uint256 feeUsdc);
+    event RedeemRequested(address indexed vault, address indexed redeemer, bytes32 orderKey, uint256 rTokenAmount);
 
     error NotOwner();
     error NotGmx();
@@ -225,6 +230,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
 
     function mint(uint256 rBtcAmount) external onlyOwner notPaused nonReentrant {
         if (state != VaultState.Active) revert BadState();
+        if (pending.kind != OrderKind.None) revert BadState();
         require(rBtcAmount > 0, "zero mint");
         _accrueBorrow(); // 기존 부채에 대한 borrow fee 먼저 적립
         uint256 effMaxLtv = effectiveMaxLtvBps(); // 레버리지 곡선 §5.1
@@ -254,6 +260,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
 
     function closePosition() external payable onlyOwner notPaused nonReentrant {
         if (state != VaultState.Active) revert BadState();
+        if (pending.kind != OrderKind.None) revert BadState();
         if (debt != 0) revert OutstandingDebt(); // OQ-5: 부채 전액 상환 후에만
         if (msg.value < MIN_EXEC_FEE) revert InsufficientExecFee();
         bytes32 key = gmx.createCloseOrder{value: msg.value}(posKey);
@@ -310,6 +317,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
     /// @notice 청산(LLTV 백스톱). pause 중에도 허용(탈출 경로, docs/70 §5).
     function liquidate() external payable nonReentrant {
         if (state != VaultState.Active) revert BadState();
+        if (pending.kind != OrderKind.None) revert BadState();
         if (msg.value < MIN_EXEC_FEE) revert InsufficientExecFee();
         uint256 ltv = currentLTV();
         if (!LTVMath.isLiquidatable(ltv, lltvBps())) revert NotLiquidatable(); // L1/I4
@@ -321,28 +329,38 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
     }
 
     /// @notice RLT 상환 (Litepaper §4.5/§5.3). 상환존(RLT<=ltv<LLTV)에서 누구나 rToken을 제출해
-    ///         oracle가로 부채를 줄이고, 부분청산된 USDC(− redeem fee)를 받는다. 프로토콜 페널티 없음.
-    /// @dev redeemer의 rToken을 burn(onlyVault). 부분청산으로 부채·포지션 동시 감소 → LTV 하락(건전화).
-    ///      인센티브: redeemer가 AMM 할인가로 산 rToken을 oracle가로 상환(스프레드). redeem fee는 즉시 차감(§7.1).
-    function redeem(uint256 rTokenAmount) external nonReentrant {
+    ///         oracle가로 부채를 줄이고, GMX partial decrease 후 회수 USDC(−redeem fee)를 받는다. 페널티 없음.
+    /// @dev rToken은 escrow 후 GMX 체결 시 burn. GMX 취소 시 redeemer에게 반환.
+    ///      인센티브: AMM 할인 매수 rToken → oracle가 상환 스프레드.
+    function redeem(uint256 rTokenAmount) external payable nonReentrant {
         if (state != VaultState.Active) revert BadState();
+        if (pending.kind != OrderKind.None) revert BadState();
         if (!LTVMath.inRedemptionZone(currentLTV(), rltBps(), lltvBps())) revert NotRedeemable();
+        if (msg.value < MIN_EXEC_FEE) revert InsufficientExecFee();
         uint256 amt = rTokenAmount > debt ? debt : rTokenAmount;
         require(amt > 0, "zero redeem");
         _accrueBorrow();
         uint256 redeemUsdc = Units.wadToUsdc(Units.btcToUsdWad(amt, oracle.getPrice()));
-        uint256 got = gmx.reducePosition(posKey, redeemUsdc); // 부분청산 USDC 수령
-        debt -= amt;
-        rToken.burn(msg.sender, amt); // redeemer의 rToken 소각 (잔액 부족 시 revert)
-        uint256 fee = (got * REDEEM_FEE_BPS) / BPS;
-        if (fee > 0) usdc.safeTransfer(factory, fee); // treasury
-        if (got - fee > 0) usdc.safeTransfer(msg.sender, got - fee); // redeemer 수령
-        emit Redeemed(address(this), msg.sender, amt, got, fee);
+        IERC20(address(rToken)).safeTransferFrom(msg.sender, address(this), amt);
+        pendingRedeemer = msg.sender;
+        pendingRedeemAmt = amt;
+        pendingRedeemUsdcSnap = usdc.balanceOf(address(this));
+        (bytes32 key, uint256 paid) = gmx.createRedeemOrder{value: msg.value}(posKey, redeemUsdc);
+        pending = PendingOrder(OrderKind.Redeem, key, block.timestamp);
+        emit RedeemRequested(address(this), msg.sender, key, amt);
+        if (paid > 0) _settleRedeem(); // mock-only 즉시 정산
     }
 
     /// @notice Settling 멈춤 복구 (docs/60 OQ-6). 정산 행이 안 올 때 탈출.
-    ///         LimitOpen 주문은 이 함수로 취소 불가 — cancelLimitOrder()를 사용할 것.
+    ///         LimitOpen 주문은 cancelLimitOrder()를 사용. Redeem 대기는 타임아웃 후 rToken 반환.
     function cancelStuckOrder() external {
+        if (state == VaultState.Active && pending.kind == OrderKind.Redeem) {
+            if (block.timestamp <= pending.createdAt + SETTLING_TIMEOUT) revert NotTimedOut();
+            bytes32 key = pending.orderKey;
+            _cancelPendingRedeem();
+            emit StuckOrderRecovered(address(this), key);
+            return;
+        }
         VaultState s = state;
         if (s != VaultState.SettlingLiquidate && s != VaultState.SettlingOpen) revert BadState();
         if (pending.kind == OrderKind.LimitOpen) revert BadState(); // limit은 cancelLimitOrder() 사용
@@ -385,6 +403,8 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
             emit PositionOpened(address(this), posKey);
         } else if (kind == OrderKind.Close) {
             _settleClose();
+        } else if (kind == OrderKind.Redeem) {
+            _settleRedeem();
         } else {
             _settleLiquidation();
         }
@@ -402,6 +422,8 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
             state = VaultState.Empty;
             delete pending;
             emit PositionOpenFailed(address(this), orderKey);
+        } else if (pending.kind == OrderKind.Redeem) {
+            _cancelPendingRedeem();
         } else {
             state = VaultState.Active; // close/liquidate 취소 → 복귀
             delete pending;
@@ -434,6 +456,41 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
     }
 
     // ── 정산 (CEI: 효과 먼저, 외부호출 나중) ──
+
+    function _settleRedeem() internal {
+        uint256 amt = pendingRedeemAmt;
+        address redeemer = pendingRedeemer;
+        require(amt > 0 && redeemer != address(0), "bad redeem");
+
+        _accrueBorrow();
+        uint256 bal = usdc.balanceOf(address(this));
+        uint256 snap = pendingRedeemUsdcSnap;
+        uint256 recovered = bal > snap ? bal - snap : 0;
+        debt -= amt;
+        rToken.burn(address(this), amt);
+
+        pendingRedeemer = address(0);
+        pendingRedeemAmt = 0;
+        pendingRedeemUsdcSnap = 0;
+        delete pending;
+
+        uint256 fee = (recovered * REDEEM_FEE_BPS) / BPS;
+        if (fee > recovered) fee = recovered;
+        if (fee > 0) usdc.safeTransfer(factory, fee);
+        uint256 toRedeemer = recovered - fee;
+        if (toRedeemer > 0) usdc.safeTransfer(redeemer, toRedeemer);
+        emit Redeemed(address(this), redeemer, amt, recovered, fee);
+    }
+
+    function _cancelPendingRedeem() internal {
+        uint256 amt = pendingRedeemAmt;
+        address redeemer = pendingRedeemer;
+        pendingRedeemer = address(0);
+        pendingRedeemAmt = 0;
+        pendingRedeemUsdcSnap = 0;
+        delete pending;
+        if (amt > 0 && redeemer != address(0)) IERC20(address(rToken)).safeTransfer(redeemer, amt);
+    }
 
     function _settleClose() internal {
         _accrueBorrow();

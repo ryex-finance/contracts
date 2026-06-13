@@ -40,7 +40,7 @@ interface IPositionVault {
     function liquidate() external payable;
 
     // ── RLT 상환 (public, 상환존 RLT<=ltv<LLTV) — redeemer가 rToken 제출, oracle가로 부채↓, 페널티 없음 ──
-    function redeem(uint256 rTokenAmount) external;
+    function redeem(uint256 rTokenAmount) external payable;
 
     // ── Settling 타임아웃 복구 (public, docs/60 OQ-6) ──
     function cancelStuckOrder() external;

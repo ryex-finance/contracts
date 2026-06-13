@@ -38,6 +38,7 @@ export declare namespace IGmxReader {
     sizeInUsd: BigNumberish;
     sizeInTokens: BigNumberish;
     collateralAmount: BigNumberish;
+    pendingImpactAmount: BigNumberish;
     borrowingFactor: BigNumberish;
     fundingFeeAmountPerSize: BigNumberish;
     longTokenClaimableFundingAmountPerSize: BigNumberish;
@@ -50,6 +51,7 @@ export declare namespace IGmxReader {
     sizeInUsd: bigint,
     sizeInTokens: bigint,
     collateralAmount: bigint,
+    pendingImpactAmount: bigint,
     borrowingFactor: bigint,
     fundingFeeAmountPerSize: bigint,
     longTokenClaimableFundingAmountPerSize: bigint,
@@ -60,6 +62,7 @@ export declare namespace IGmxReader {
     sizeInUsd: bigint;
     sizeInTokens: bigint;
     collateralAmount: bigint;
+    pendingImpactAmount: bigint;
     borrowingFactor: bigint;
     fundingFeeAmountPerSize: bigint;
     longTokenClaimableFundingAmountPerSize: bigint;

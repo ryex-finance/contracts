@@ -72,7 +72,7 @@ const GMX_ADAPTER_ABI    = GmxAdapterArtifact.abi;
 const ERC20_ABI          = ERC20Abi;
 
 const GMX_READER_ABI = [
-  "function getPosition(address dataStore, bytes32 key) view returns (tuple(tuple(address account,address market,address collateralToken) addresses, tuple(uint256 sizeInUsd,uint256 sizeInTokens,uint256 collateralAmount,uint256 borrowingFactor,uint256 fundingFeeAmountPerSize,uint256 longTokenClaimableFundingAmountPerSize,uint256 shortTokenClaimableFundingAmountPerSize,uint256 increasedAtTime,uint256 decreasedAtTime) numbers, tuple(bool isLong) flags))",
+  "function getPosition(address dataStore, bytes32 key) view returns (tuple(tuple(address account,address market,address collateralToken) addresses, tuple(uint256 sizeInUsd,uint256 sizeInTokens,uint256 collateralAmount,int256 pendingImpactAmount,uint256 borrowingFactor,uint256 fundingFeeAmountPerSize,uint256 longTokenClaimableFundingAmountPerSize,uint256 shortTokenClaimableFundingAmountPerSize,uint256 increasedAtTime,uint256 decreasedAtTime) numbers, tuple(bool isLong) flags))",
 ];
 
 /** GMX Reader에서 adapter 계정의 실제 포지션을 직접 조회 (vault.gmxPosition()과 교차 검증용)

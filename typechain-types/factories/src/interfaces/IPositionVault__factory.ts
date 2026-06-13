@@ -352,7 +352,7 @@ const _abi = [
     ],
     name: "redeem",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {

@@ -20,8 +20,11 @@ import {
   mintMaxRToken,
   pushToRedemptionZone,
   PRICE_ONE,
+  readGmxPosition,
   readVaultRisk,
   repayAllDebt,
+  waitForRedeemSettlement,
+  EXEC_FEE,
   type Deployment,
 } from "./helpers";
 
@@ -56,9 +59,14 @@ describe("rToken Redeem — RLT zone (Arbitrum Sepolia)", function () {
     vault = await ethers.getContractAt("PositionVault", vaultAddr, owner);
     await fundEth(owner, await redeemer.getAddress());
     await repayAllDebt(vaultAddr, owner, rTokenAddr, [redeemer]);
-    // 이전 실행에서 oracle 가격이 하락했을 수 있음 → 초기값 복원
+    // 숏 포지션: oracle >> entry 이면 PnL 음수 → collateralValueUsdWad=0 → mint 불가
     const oracle = await ethers.getContractAt("MockPriceOracle", oracleAddr, owner);
-    await (await oracle.setPrice(3_000n * PRICE_ONE)).wait();
+    const adapter = await ethers.getContractAt("GmxV2Adapter", deployment.gmxAdapter);
+    const pk = await adapter.positionKey(vaultAddr, await vault.marketId(), await vault.isLong());
+    const pos = await adapter.positions(pk);
+    const syncPrice = pos.entryPrice8 > 0n ? pos.entryPrice8 : 1650n * PRICE_ONE;
+    await (await oracle.setPrice(syncPrice)).wait();
+    console.log(`  oracle sync  : $${ethers.formatUnits(syncPrice, 8)} (entry-aligned)`);
     console.log(`Vault     : ${vaultAddr}`);
   });
 
@@ -94,10 +102,15 @@ describe("rToken Redeem — RLT zone (Arbitrum Sepolia)", function () {
     expect(risk.currentLtvBps).to.be.lt(lltv);
   });
 
-  it("3. third party redeems rToken on behalf of vault debt", async () => {
+  it("3. third party redeems rToken — GMX partial decrease + USDC to redeemer", async function () {
     const riskBefore = await readVaultRisk(vault, oracleAddr);
     const debtBefore: bigint = riskBefore.debtRToken;
     expect(debtBefore).to.be.gt(0n);
+
+    const isLong: boolean = await vault.isLong();
+    const gmxBefore = await readGmxPosition(deployment.gmxAdapter, isLong);
+    expect(gmxBefore.exists).to.equal(true, "GMX position must exist before redeem");
+    console.log(`  GMX size before : $${ethers.formatUnits(gmxBefore.sizeInUsd, 30)}`);
 
     // redeem 수량: 부채의 50% (3rd party가 대신 갚을 분)
     const redeemAmount = debtBefore / 2n;
@@ -115,20 +128,27 @@ describe("rToken Redeem — RLT zone (Arbitrum Sepolia)", function () {
     console.log(`  redeemer USDC : ${ethers.formatUnits(usdcBefore, 6)} (before)`);
 
     const vaultAsRedeemer = await ethers.getContractAt("PositionVault", vaultAddr, redeemer);
-    const tx = await vaultAsRedeemer.redeem(redeemAmount);
+    const rTokenRedeemer = new ethers.Contract(rTokenAddr, RTOKEN_ABI, redeemer);
+    await (await rTokenRedeemer.approve(vaultAddr, redeemAmount)).wait();
+    const tx = await vaultAsRedeemer.redeem(redeemAmount, { value: EXEC_FEE });
     await tx.wait();
+    await waitForRedeemSettlement(vaultAddr, deployment.gmxAdapter, redeemer);
 
     const riskAfter = await readVaultRisk(vault, oracleAddr);
     const usdcAfter: bigint = await usdc.balanceOf(redeemerAddr);
+    const gmxAfter = await readGmxPosition(deployment.gmxAdapter, isLong);
 
     console.log(`  debt before/after : ${ethers.formatUnits(debtBefore, 18)} → ${ethers.formatUnits(riskAfter.debtRToken, 18)}`);
     console.log(`  LTV  before/after : ${riskBefore.currentLtvBps} → ${riskAfter.currentLtvBps} bps`);
+    console.log(`  GMX size after    : $${ethers.formatUnits(gmxAfter.sizeInUsd, 30)}`);
     console.log(`  redeemer USDC     : ${ethers.formatUnits(usdcBefore, 6)} → ${ethers.formatUnits(usdcAfter, 6)} (+${ethers.formatUnits(usdcAfter - usdcBefore, 6)})`);
 
     expect(riskAfter.debtRToken).to.equal(debtBefore - redeemAmount);
     expect(riskAfter.currentLtvBps).to.be.lt(riskBefore.currentLtvBps, "LTV should decrease after redeem");
     expect(usdcAfter).to.be.gt(usdcBefore, "redeemer should receive USDC");
+    expect(gmxAfter.sizeInUsd).to.be.lt(gmxBefore.sizeInUsd, "GMX sizeInUsd should decrease");
     expect(await vault.state()).to.equal(VaultState.Active);
+    expect(await vault.pending()).to.satisfy((p: { kind: bigint }) => p.kind === 0n, "no pending order");
   });
 
   it("4. owner cannot block third-party redeem (non-owner succeeds)", async () => {
@@ -151,6 +171,10 @@ describe("rToken Redeem — RLT zone (Arbitrum Sepolia)", function () {
     await (await rTokenOwner.transfer(await redeemer.getAddress(), small)).wait();
 
     const vaultAsRedeemer = await ethers.getContractAt("PositionVault", vaultAddr, redeemer);
-    await expect(vaultAsRedeemer.redeem(small)).to.not.be.reverted;
+    const rTokenRedeemer = new ethers.Contract(rTokenAddr, RTOKEN_ABI, redeemer);
+    await (await rTokenRedeemer.approve(vaultAddr, small)).wait();
+    const tx = await vaultAsRedeemer.redeem(small, { value: EXEC_FEE });
+    await tx.wait();
+    await waitForRedeemSettlement(vaultAddr, deployment.gmxAdapter, redeemer);
   });
 });

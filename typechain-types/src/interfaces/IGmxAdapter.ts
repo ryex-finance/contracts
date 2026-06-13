@@ -48,12 +48,12 @@ export interface IGmxAdapterInterface extends Interface {
       | "createCloseOrder"
       | "createLimitOrder"
       | "createOpenOrder"
+      | "createRedeemOrder"
       | "createStopLoss"
       | "createTakeProfit"
       | "getPositionValueUsd"
       | "gmxPositionData"
       | "positionKey"
-      | "reducePosition"
       | "requestCancellation"
   ): FunctionFragment;
 
@@ -68,6 +68,10 @@ export interface IGmxAdapterInterface extends Interface {
   encodeFunctionData(
     functionFragment: "createOpenOrder",
     values: [BytesLike, BigNumberish, BigNumberish, BigNumberish, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "createRedeemOrder",
+    values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "createStopLoss",
@@ -88,10 +92,6 @@ export interface IGmxAdapterInterface extends Interface {
   encodeFunctionData(
     functionFragment: "positionKey",
     values: [AddressLike, BytesLike, boolean]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "reducePosition",
-    values: [BytesLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "requestCancellation",
@@ -111,6 +111,10 @@ export interface IGmxAdapterInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "createRedeemOrder",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "createStopLoss",
     data: BytesLike
   ): Result;
@@ -128,10 +132,6 @@ export interface IGmxAdapterInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "positionKey",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "reducePosition",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -213,6 +213,12 @@ export interface IGmxAdapter extends BaseContract {
     "payable"
   >;
 
+  createRedeemOrder: TypedContractMethod<
+    [positionKey: BytesLike, withdrawUsdc: BigNumberish],
+    [[string, bigint] & { orderKey: string; paidUsdc: bigint }],
+    "payable"
+  >;
+
   createStopLoss: TypedContractMethod<
     [positionKey: BytesLike, triggerPrice8: BigNumberish],
     [string],
@@ -241,12 +247,6 @@ export interface IGmxAdapter extends BaseContract {
     [account: AddressLike, marketId: BytesLike, isLong: boolean],
     [string],
     "view"
-  >;
-
-  reducePosition: TypedContractMethod<
-    [positionKey: BytesLike, withdrawUsdc: BigNumberish],
-    [bigint],
-    "nonpayable"
   >;
 
   requestCancellation: TypedContractMethod<
@@ -289,6 +289,13 @@ export interface IGmxAdapter extends BaseContract {
     "payable"
   >;
   getFunction(
+    nameOrSignature: "createRedeemOrder"
+  ): TypedContractMethod<
+    [positionKey: BytesLike, withdrawUsdc: BigNumberish],
+    [[string, bigint] & { orderKey: string; paidUsdc: bigint }],
+    "payable"
+  >;
+  getFunction(
     nameOrSignature: "createStopLoss"
   ): TypedContractMethod<
     [positionKey: BytesLike, triggerPrice8: BigNumberish],
@@ -318,13 +325,6 @@ export interface IGmxAdapter extends BaseContract {
     [account: AddressLike, marketId: BytesLike, isLong: boolean],
     [string],
     "view"
-  >;
-  getFunction(
-    nameOrSignature: "reducePosition"
-  ): TypedContractMethod<
-    [positionKey: BytesLike, withdrawUsdc: BigNumberish],
-    [bigint],
-    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "requestCancellation"

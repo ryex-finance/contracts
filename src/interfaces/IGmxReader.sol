@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 /// @title IGmxReader — GMX v2 Reader 최소 인터페이스 (포지션 조회용)
 /// @notice ABI layout은 GMX v2 Position.Props struct와 정확히 일치해야 디코딩이 맞음.
-///         Arbitrum Sepolia Reader: 0x22199a49A999c351eF7927602CFB187ec3cae489
+///         Arbitrum Sepolia Reader: 0x4750376b9378294138Cf7B7D69a2d243f4940f71
 ///         Arbitrum One Reader:     0x0537C767cDAa5bD5D2C3253D34EF59A13Edc7f4
 interface IGmxReader {
     // ── Position.Addresses ──────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ interface IGmxReader {
         uint256 sizeInUsd;           // GMX 30-dec USD (예: $10 → 10 × 10^30). formatUnits(v, 30)
         uint256 sizeInTokens;        // index token decimals (ETH: 18-dec)
         uint256 collateralAmount;    // USDC 6-dec. formatUnits(v, 6)
+        int256  pendingImpactAmount; // GMX v2.2+ price impact (index token decimals)
         uint256 borrowingFactor;
         uint256 fundingFeeAmountPerSize;
         uint256 longTokenClaimableFundingAmountPerSize;

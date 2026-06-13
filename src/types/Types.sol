@@ -19,7 +19,8 @@ enum OrderKind {
     Liquidate,   // LLTV 강제 청산
     LimitOpen,   // 지정가 open — triggerPrice 도달 시 체결
     TakeProfit,  // 익절 — Active 중 별도 보관, pending과 무관
-    StopLoss     // 손절 — Active 중 별도 보관, pending과 무관
+    StopLoss,    // 손절 — Active 중 별도 보관, pending과 무관
+    Redeem       // RLT 상환 — GMX partial MarketDecrease 후 redeemer USDC 지급
 }
 
 /// @notice 콜백 대기 주문

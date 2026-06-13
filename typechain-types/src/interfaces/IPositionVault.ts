@@ -479,11 +479,7 @@ export interface IPositionVault extends BaseContract {
 
   owner: TypedContractMethod<[], [string], "view">;
 
-  redeem: TypedContractMethod<
-    [rTokenAmount: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
+  redeem: TypedContractMethod<[rTokenAmount: BigNumberish], [void], "payable">;
 
   repay: TypedContractMethod<[rBtcAmount: BigNumberish], [void], "nonpayable">;
 
@@ -596,7 +592,7 @@ export interface IPositionVault extends BaseContract {
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "redeem"
-  ): TypedContractMethod<[rTokenAmount: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<[rTokenAmount: BigNumberish], [void], "payable">;
   getFunction(
     nameOrSignature: "repay"
   ): TypedContractMethod<[rBtcAmount: BigNumberish], [void], "nonpayable">;

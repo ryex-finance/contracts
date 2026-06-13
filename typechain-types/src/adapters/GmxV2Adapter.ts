@@ -278,6 +278,7 @@ export interface GmxV2AdapterInterface extends Interface {
       | "createCloseOrder"
       | "createLimitOrder"
       | "createOpenOrder"
+      | "createRedeemOrder"
       | "createStopLoss"
       | "createTakeProfit"
       | "dataStore"
@@ -299,7 +300,6 @@ export interface GmxV2AdapterInterface extends Interface {
       | "positionKey"
       | "positions"
       | "reader"
-      | "reducePosition"
       | "registerMarket"
       | "renounceOwnership"
       | "requestCancellation"
@@ -371,6 +371,10 @@ export interface GmxV2AdapterInterface extends Interface {
     values: [BytesLike, BigNumberish, BigNumberish, BigNumberish, boolean]
   ): string;
   encodeFunctionData(
+    functionFragment: "createRedeemOrder",
+    values: [BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "createStopLoss",
     values: [BytesLike, BigNumberish]
   ): string;
@@ -436,10 +440,6 @@ export interface GmxV2AdapterInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "reader", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "reducePosition",
-    values: [BytesLike, BigNumberish]
-  ): string;
   encodeFunctionData(
     functionFragment: "registerMarket",
     values: [BytesLike, AddressLike, AddressLike]
@@ -515,6 +515,10 @@ export interface GmxV2AdapterInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "createRedeemOrder",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "createStopLoss",
     data: BytesLike
   ): Result;
@@ -574,10 +578,6 @@ export interface GmxV2AdapterInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "positions", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "reader", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "reducePosition",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "registerMarket",
     data: BytesLike
@@ -814,6 +814,12 @@ export interface GmxV2Adapter extends BaseContract {
     "payable"
   >;
 
+  createRedeemOrder: TypedContractMethod<
+    [pk: BytesLike, withdrawUsdc: BigNumberish],
+    [[string, bigint] & { orderKey: string; paidUsdc: bigint }],
+    "payable"
+  >;
+
   createStopLoss: TypedContractMethod<
     [pk: BytesLike, triggerPrice8: BigNumberish],
     [string],
@@ -869,12 +875,14 @@ export interface GmxV2Adapter extends BaseContract {
   orders: TypedContractMethod<
     [arg0: BytesLike],
     [
-      [string, bigint, string, string, boolean] & {
+      [string, bigint, string, string, boolean, bigint, bigint] & {
         vault: string;
         kind: bigint;
         positionKey: string;
         gmxKey: string;
         executed: boolean;
+        redeemUsdc: bigint;
+        usdcSnap: bigint;
       }
     ],
     "view"
@@ -906,12 +914,6 @@ export interface GmxV2Adapter extends BaseContract {
   >;
 
   reader: TypedContractMethod<[], [string], "view">;
-
-  reducePosition: TypedContractMethod<
-    [pk: BytesLike, withdrawUsdc: BigNumberish],
-    [bigint],
-    "nonpayable"
-  >;
 
   registerMarket: TypedContractMethod<
     [marketId: BytesLike, oracle: AddressLike, gmxMarket: AddressLike],
@@ -1037,6 +1039,13 @@ export interface GmxV2Adapter extends BaseContract {
     "payable"
   >;
   getFunction(
+    nameOrSignature: "createRedeemOrder"
+  ): TypedContractMethod<
+    [pk: BytesLike, withdrawUsdc: BigNumberish],
+    [[string, bigint] & { orderKey: string; paidUsdc: bigint }],
+    "payable"
+  >;
+  getFunction(
     nameOrSignature: "createStopLoss"
   ): TypedContractMethod<
     [pk: BytesLike, triggerPrice8: BigNumberish],
@@ -1105,12 +1114,14 @@ export interface GmxV2Adapter extends BaseContract {
   ): TypedContractMethod<
     [arg0: BytesLike],
     [
-      [string, bigint, string, string, boolean] & {
+      [string, bigint, string, string, boolean, bigint, bigint] & {
         vault: string;
         kind: bigint;
         positionKey: string;
         gmxKey: string;
         executed: boolean;
+        redeemUsdc: bigint;
+        usdcSnap: bigint;
       }
     ],
     "view"
@@ -1146,13 +1157,6 @@ export interface GmxV2Adapter extends BaseContract {
   getFunction(
     nameOrSignature: "reader"
   ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "reducePosition"
-  ): TypedContractMethod<
-    [pk: BytesLike, withdrawUsdc: BigNumberish],
-    [bigint],
-    "nonpayable"
-  >;
   getFunction(
     nameOrSignature: "registerMarket"
   ): TypedContractMethod<

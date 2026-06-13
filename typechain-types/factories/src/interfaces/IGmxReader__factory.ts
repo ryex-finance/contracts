@@ -66,6 +66,11 @@ const _abi = [
                 type: "uint256",
               },
               {
+                internalType: "int256",
+                name: "pendingImpactAmount",
+                type: "int256",
+              },
+              {
                 internalType: "uint256",
                 name: "borrowingFactor",
                 type: "uint256",

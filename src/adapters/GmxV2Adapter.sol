@@ -81,10 +81,12 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
 
     struct Order {
         address vault;
-        uint8 kind; // 1=Open, 2=Close/Liquidate, 3=TakeProfit/StopLoss
+        uint8 kind; // 1=Open, 2=Close, 3=TP/SL, 4=Redeem (partial decrease)
         bytes32 positionKey;
         bytes32 gmxKey; // the real GMX order key (tracing / cancel detection)
         bool executed;
+        uint256 redeemUsdc; // kind 4: oracle USDC value for proportional sizing
+        uint256 usdcSnap;   // kind 4: adapter USDC balance before GMX order
     }
 
     mapping(bytes32 => IPriceOracle) public marketOracle; // marketId => mock oracle (mock-mark)
@@ -298,7 +300,10 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
             isLong:      isLong
         });
         orderKey = _newOrderKey(msg.sender);
-        orders[orderKey] = Order({vault: msg.sender, kind: 1, positionKey: pk, gmxKey: gmxKey, executed: false});
+        orders[orderKey] = Order({
+            vault: msg.sender, kind: 1, positionKey: pk, gmxKey: gmxKey, executed: false,
+            redeemUsdc: 0, usdcSnap: 0
+        });
         if (gmxKey != bytes32(0)) gmxKeyToRyexKey[gmxKey] = orderKey;
         emit OrderCreated(orderKey, msg.sender, 1, gmxKey);
     }
@@ -316,7 +321,10 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
             gmxKey = _createGmxOrder(gmxMarket, ORDER_MARKET_DECREASE, 0, p.gmxSizeUsd, 0, acceptable, p.isLong);
         }
         orderKey = _newOrderKey(msg.sender);
-        orders[orderKey] = Order({vault: msg.sender, kind: 2, positionKey: pk, gmxKey: gmxKey, executed: false});
+        orders[orderKey] = Order({
+            vault: msg.sender, kind: 2, positionKey: pk, gmxKey: gmxKey, executed: false,
+            redeemUsdc: 0, usdcSnap: 0
+        });
         if (gmxKey != bytes32(0)) gmxKeyToRyexKey[gmxKey] = orderKey;
         emit OrderCreated(orderKey, msg.sender, 2, gmxKey);
     }
@@ -367,7 +375,7 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
         }
 
         orderKey = _newOrderKey(msg.sender);
-        orders[orderKey] = Order({vault: msg.sender, kind: 3, positionKey: pk, gmxKey: gmxKey, executed: false});
+        orders[orderKey] = Order({vault: msg.sender, kind: 3, positionKey: pk, gmxKey: gmxKey, executed: false, redeemUsdc: 0, usdcSnap: 0});
         if (gmxKey != bytes32(0)) gmxKeyToRyexKey[gmxKey] = orderKey;
         emit OrderCreated(orderKey, msg.sender, 3, gmxKey);
     }
@@ -389,20 +397,76 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
         return value > 0 ? uint256(value) : 0;
     }
 
-    /// @notice RLT redemption — MOCK partial close (adapter USDC buffer). The real GMX position is
-    ///         left intact until full close/liquidation (advisor: don't reduce the real leg per-redeem).
-    function reducePosition(bytes32 pk, uint256 withdrawUsdc) external returns (uint256 paidUsdc) {
-        Position storage p = positions[pk];
+    /// @notice RLT 상환 — GMX MarketDecrease(partial). 체결 시 proceeds → Vault → redeemer.
+    function createRedeemOrder(bytes32 pk, uint256 withdrawUsdc)
+        external
+        payable
+        returns (bytes32 orderKey, uint256 paidUsdc)
+    {
+        Position memory p = positions[pk];
         require(p.active, "GMX: no position");
         require(msg.sender == p.vault, "GMX: not vault");
+        require(withdrawUsdc > 0, "GMX: zero redeem");
         uint256 equityUsdc = Units.wadToUsdc(getPositionValueUsd(pk));
         require(equityUsdc > 0 && withdrawUsdc <= equityUsdc, "GMX: exceeds equity");
-        uint256 collateralReduction = (p.collateral * withdrawUsdc) / equityUsdc;
-        if (collateralReduction > p.collateral) collateralReduction = p.collateral;
-        p.collateral -= collateralReduction;
+
+        uint256 sizeDelta = (p.gmxSizeUsd * withdrawUsdc) / equityUsdc;
+        if (sizeDelta == 0) sizeDelta = 1;
+        if (sizeDelta > p.gmxSizeUsd) sizeDelta = p.gmxSizeUsd;
+
+        uint256 collatDelta = (p.collateral * withdrawUsdc) / equityUsdc;
+        if (collatDelta == 0) collatDelta = 1;
+        if (collatDelta > p.collateral) collatDelta = p.collateral;
+
+        uint256 usdcSnap = usdc.balanceOf(address(this));
+        address gmxMarket = gmxMarketOf[p.marketId];
+        bytes32 gmxKey;
+        if (gmxMarket != address(0)) {
+            uint256 acceptable = p.isLong ? acceptablePriceMin : acceptablePriceMax;
+            gmxKey = _createGmxOrder(gmxMarket, ORDER_MARKET_DECREASE, collatDelta, sizeDelta, 0, acceptable, p.isLong);
+        }
+
+        orderKey = _newOrderKey(msg.sender);
+        orders[orderKey] = Order({
+            vault:       msg.sender,
+            kind:        4,
+            positionKey: pk,
+            gmxKey:      gmxKey,
+            executed:    false,
+            redeemUsdc:  withdrawUsdc,
+            usdcSnap:    usdcSnap
+        });
+        if (gmxKey != bytes32(0)) gmxKeyToRyexKey[gmxKey] = orderKey;
+        emit OrderCreated(orderKey, msg.sender, 4, gmxKey);
+
+        paidUsdc = 0;
+        // mock-only: GMX leg 없음 → 즉시 포지션 축소·USDC 송금 (Vault 콜백 없음 — reentrancy 회피)
+        if (gmxKey == bytes32(0)) {
+            orders[orderKey].executed = true;
+            paidUsdc = _fillRedeemOrder(orders[orderKey]);
+            emit OrderExecuted(orderKey, bytes32(0));
+        }
+    }
+
+    /// @dev RLT redeem 체결: mock 회계 비례 축소 + USDC → Vault. paid = Vault 수취액.
+    function _fillRedeemOrder(Order storage o) internal returns (uint256 paid) {
+        Position storage p = positions[o.positionKey];
+        uint256 redeemUsdc = o.redeemUsdc;
+        uint256 equityUsdc = Units.wadToUsdc(getPositionValueUsd(o.positionKey));
+        if (equityUsdc > 0 && redeemUsdc > 0) {
+            uint256 sizeReduce = (p.gmxSizeUsd * redeemUsdc) / equityUsdc;
+            if (sizeReduce > p.gmxSizeUsd) sizeReduce = p.gmxSizeUsd;
+            if (sizeReduce > 0) p.gmxSizeUsd -= sizeReduce;
+            uint256 collRed = (p.collateral * redeemUsdc) / equityUsdc;
+            if (collRed > p.collateral) collRed = p.collateral;
+            if (collRed > 0) p.collateral -= collRed;
+        }
         uint256 bal = usdc.balanceOf(address(this));
-        paidUsdc = withdrawUsdc > bal ? bal : withdrawUsdc;
-        if (paidUsdc > 0) usdc.safeTransfer(p.vault, paidUsdc);
+        paid = bal > o.usdcSnap ? bal - o.usdcSnap : 0;
+        if (paid == 0 && o.gmxKey == bytes32(0)) {
+            paid = redeemUsdc > bal ? bal : redeemUsdc;
+        }
+        if (paid > 0) usdc.safeTransfer(o.vault, paid);
     }
 
     // ── GMX 자동 콜백 (callbackContract = address(this) 설정 시 자동 호출) ────
@@ -495,6 +559,9 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
 
         if (o.kind == 1) {
             posExists ? _doExecute(ryexKey, o) : _doCancel(ryexKey, o);
+        } else if (o.kind == 4) {
+            // partial decrease: 포지션이 남아 있어도 체결됨
+            if (!_isGmxOrderPending(gmxKey)) _doExecute(ryexKey, o);
         } else {
             posExists ? _doCancel(ryexKey, o) : _doExecute(ryexKey, o);
         }
@@ -505,6 +572,8 @@ contract GmxV2Adapter is IGmxAdapter, IGmxOrderCallbackReceiver, Ownable {
         if (o.kind == 1) {
             // open 체결: 포지션 활성화
             positions[o.positionKey].active = true;
+        } else if (o.kind == 4) {
+            _fillRedeemOrder(o);
         } else {
             // close / liquidate / TP / SL: mock-mark 기준 USDC 지급 후 포지션 종료
             uint256 recovered = Units.wadToUsdc(getPositionValueUsd(o.positionKey));

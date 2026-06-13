@@ -22,6 +22,21 @@ export const ORACLE_ABI          = MockPriceOracleArtifact.abi;
 export const RTOKEN_ABI          = RTokenArtifact.abi;
 export const ERC20_ABI           = ERC20Abi;
 
+export const GMX_READER_ABI = [
+  "function getPosition(address dataStore, bytes32 key) view returns (tuple(tuple(address account,address market,address collateralToken) addresses, tuple(uint256 sizeInUsd,uint256 sizeInTokens,uint256 collateralAmount,int256 pendingImpactAmount,uint256 borrowingFactor,uint256 fundingFeeAmountPerSize,uint256 longTokenClaimableFundingAmountPerSize,uint256 shortTokenClaimableFundingAmountPerSize,uint256 increasedAtTime,uint256 decreasedAtTime) numbers, tuple(bool isLong) flags))",
+];
+
+export const OrderKind = {
+  None: 0n,
+  Open: 1n,
+  Close: 2n,
+  Liquidate: 3n,
+  LimitOpen: 4n,
+  TakeProfit: 5n,
+  StopLoss: 6n,
+  Redeem: 7n,
+} as const;
+
 export interface MarketInfo {
   marketId:  string;
   oracle:    string;
@@ -271,12 +286,60 @@ export async function pushToLiquidationZone(
   throw new Error("failed to enter liquidation zone after 50 price rises");
 }
 
+/** GMX Reader에서 adapter 계정 포지션 조회 */
+export async function readGmxPosition(adapterAddr: string, isLong: boolean) {
+  const posKey = ethers.keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "address", "address", "bool"],
+      [adapterAddr, GMX.MARKET_ETH, GMX.USDC, isLong],
+    ),
+  );
+  const reader = new ethers.Contract(GMX.READER, GMX_READER_ABI, ethers.provider);
+  const pos = await reader.getPosition(GMX.DATA_STORE, posKey);
+  const sizeInUsd = pos.numbers.sizeInUsd as bigint;
+  return {
+    posKey,
+    sizeInUsd,
+    collateralAmount: pos.numbers.collateralAmount as bigint,
+    isLong: pos.flags.isLong as boolean,
+    exists: sizeInUsd > 0n,
+  };
+}
+
 /**
  * Vault가 Settling 상태에서 벗어날 때까지 대기.
  * GMX 콜백이 자동으로 상태를 전환하고, 타임아웃 시 settleGmxOrder() fallback 호출.
  *
  * @param waitTimeoutMs GMX 콜백 대기 시간 (콜백이 안 오면 settleGmxOrder로 강제 정산)
  */
+/** GMX redeem( partial decrease) 체결 대기 — pending.kind == Redeem → None */
+export async function waitForRedeemSettlement(
+  vaultAddr: string,
+  adapterAddr: string,
+  signer: Awaited<ReturnType<typeof ethers.getSigners>>[0],
+  waitTimeoutMs = 90_000,
+): Promise<void> {
+  const vault   = await ethers.getContractAt("PositionVault", vaultAddr);
+  const adapter = new ethers.Contract(adapterAddr, GMX_ADAPTER_ABI, signer);
+
+  const cleared = await pollUntil(
+    async () => {
+      const p = await vault.pending();
+      return p.kind as bigint;
+    },
+    (kind) => kind === 0n,
+    5_000,
+    waitTimeoutMs,
+  ).catch(() => null);
+
+  if (cleared !== null) return;
+
+  console.log("  ⚡ redeem 콜백 타임아웃 — settleGmxOrder fallback 호출…");
+  const pending   = await vault.pending();
+  const orderInfo = await (adapter as any).orders(pending.orderKey) as { gmxKey: string };
+  await (await adapter.settleGmxOrder(orderInfo.gmxKey)).wait();
+}
+
 export async function waitForSettlement(
   vaultAddr: string,
   adapterAddr: string,
