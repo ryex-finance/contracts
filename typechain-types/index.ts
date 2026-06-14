@@ -156,6 +156,8 @@ export type { IPositionVault } from "./src/interfaces/IPositionVault";
 export { IPositionVault__factory } from "./factories/src/interfaces/IPositionVault__factory";
 export type { IPriceOracle } from "./src/interfaces/IPriceOracle";
 export { IPriceOracle__factory } from "./factories/src/interfaces/IPriceOracle__factory";
+export type { IRedemptionQueueSync } from "./src/interfaces/IRedemptionQueueSync";
+export { IRedemptionQueueSync__factory } from "./factories/src/interfaces/IRedemptionQueueSync__factory";
 export type { IRToken } from "./src/interfaces/IRToken";
 export { IRToken__factory } from "./factories/src/interfaces/IRToken__factory";
 export type { IRyexSwapPool } from "./src/interfaces/IRyexSwapPool";

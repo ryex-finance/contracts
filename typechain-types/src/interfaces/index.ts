@@ -8,6 +8,7 @@ export type { IGmxReader } from "./IGmxReader";
 export type { IPositionVault } from "./IPositionVault";
 export type { IPriceOracle } from "./IPriceOracle";
 export type { IRToken } from "./IRToken";
+export type { IRedemptionQueueSync } from "./IRedemptionQueueSync";
 export type { IRyexSwapPool } from "./IRyexSwapPool";
 export type { IShortPerp } from "./IShortPerp";
 export type { IVaultFactory } from "./IVaultFactory";

@@ -99,14 +99,13 @@ describe("VaultFactory Dashboard Views (Arbitrum Sepolia)", function () {
     expect(redeemable).to.be.true;
   });
 
-  // ── 3. #Redeemable positions — enqueueRedemption → redeemableCount 증가 ────
-  // UI: "Redeemable positions / in RLT queue"
-  // 조회: factory.redeemableCount(marketId)
-  it("3. enqueueRedemption 후 redeemableCount = 1", async function () {
-    await (await factory.enqueueRedemption(marketId, vaultAddr)).wait();
-
+  // ── 3. #Redeemable positions — oracle setPrice / mint 시 자동 enqueue ───────
+  it("3. 상환존 진입 시 redeemableCount >= 1 (자동 큐 등록)", async function () {
+    const inQueue: boolean = await factory.inRedemptionQueue(marketId, vaultAddr);
     const count: bigint = await factory.redeemableCount(marketId);
-    console.log(`  redeemableCount = ${count}`);
+    console.log(`  inRedemptionQueue = ${inQueue}`);
+    console.log(`  redeemableCount   = ${count}`);
+    expect(inQueue).to.equal(true, "pushToRedemptionZone(setPrice) 후 자동 enqueue 기대");
     expect(count).to.be.gte(1n);
   });
 
@@ -146,23 +145,27 @@ describe("VaultFactory Dashboard Views (Arbitrum Sepolia)", function () {
     expect(health).to.be.gt(10_000n);
   });
 
-  // ── 6. 가격 복원 → 세 지표 모두 0으로 복귀 ──────────────────────────────────
-  // #Redeemable positions / #RLT capacity / #Avg health 세 값이 동시에 0이 됨을 확인
-  it("6. oracle 가격 복원 후 isRedeemable = false (큐 항목은 stale 처리됨)", async function () {
+  // ── 6. 가격 복원 → stale 큐 자동 prune + 집계 0 ─────────────────────────────
+  it("6. oracle 가격 복원 후 큐에서 제거되고 집계값 = 0", async function () {
     await resetOraclePrice(oracleAddr, owner);
 
     const redeemable: boolean = await vault.isRedeemable();
+    const inQueue: boolean = await factory.inRedemptionQueue(marketId, vaultAddr);
+    const qLen: bigint = await factory.redemptionQueueLength(marketId);
     const count: bigint = await factory.redeemableCount(marketId);
     const debt: bigint  = await factory.totalRedeemableDebt(marketId);
     const health: bigint = await factory.avgHealthAcrossQueue(marketId);
 
     console.log(`  vault.isRedeemable   = ${redeemable}`);
-    console.log(`  redeemableCount      = ${count}  (vault는 큐에 있지만 isRedeemable=false)`);
+    console.log(`  inRedemptionQueue    = ${inQueue}`);
+    console.log(`  redemptionQueueLength= ${qLen}`);
+    console.log(`  redeemableCount      = ${count}`);
     console.log(`  totalRedeemableDebt  = ${ethers.formatUnits(debt, 18)} rToken`);
     console.log(`  avgHealthAcrossQueue = ${health} bps`);
 
-    // 가격 복원 후 LTV가 상환존 이탈 → isRedeemable=false → 집계에서 제외
     expect(redeemable).to.be.false;
+    expect(inQueue).to.be.false;
+    expect(qLen).to.equal(0n);
     expect(count).to.equal(0n);
     expect(debt).to.equal(0n);
     expect(health).to.equal(0n);

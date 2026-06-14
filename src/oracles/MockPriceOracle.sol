@@ -2,15 +2,19 @@
 pragma solidity 0.8.24;
 
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
+import {IRedemptionQueueSync} from "../interfaces/IRedemptionQueueSync.sol";
 
 /// @title MockPriceOracle — 데모/로컬 가격 시뮬 (docs/14)
 /// @notice 가격 임의 변경(setPrice)으로 §5 하락 시나리오 재현. 인터페이스·fail-safe는 프로덕션과 동일.
+///         setPrice 시 factory.syncRedemptionQueueForOracle 호출 → RLT zone 진입 볼트 자동 큐 등록.
 contract MockPriceOracle is IPriceOracle {
     uint256 private _price; // 8 decimals
     address public owner;
+    IRedemptionQueueSync public redemptionSync;
 
     event PriceUpdated(uint256 oldPrice, uint256 newPrice);
     event OwnerTransferred(address indexed from, address indexed to);
+    event RedemptionSyncConfigured(address indexed factory);
 
     error NotOwner();
     error ZeroPrice();
@@ -32,6 +36,15 @@ contract MockPriceOracle is IPriceOracle {
         if (price8 == 0) revert ZeroPrice(); // fail-safe P1
         emit PriceUpdated(_price, price8);
         _price = price8;
+        if (address(redemptionSync) != address(0)) {
+            redemptionSync.syncRedemptionQueueForOracle(address(this));
+        }
+    }
+
+    /// @notice VaultFactory 연결. 배포 스크립트에서 1회 설정.
+    function configureRedemptionSync(IRedemptionQueueSync sync) external onlyOwner {
+        redemptionSync = sync;
+        emit RedemptionSyncConfigured(address(sync));
     }
 
     function transferOwnership(address to) external onlyOwner {

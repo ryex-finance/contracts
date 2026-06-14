@@ -314,6 +314,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IPriceOracle__factory>;
     getContractFactory(
+      name: "IRedemptionQueueSync",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IRedemptionQueueSync__factory>;
+    getContractFactory(
       name: "IRToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IRToken__factory>;
@@ -754,6 +758,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IPriceOracle>;
     getContractAt(
+      name: "IRedemptionQueueSync",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IRedemptionQueueSync>;
+    getContractAt(
       name: "IRToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -1135,6 +1144,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IPriceOracle>;
     deployContract(
+      name: "IRedemptionQueueSync",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IRedemptionQueueSync>;
+    deployContract(
       name: "IRToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IRToken>;
@@ -1574,6 +1587,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IPriceOracle>;
+    deployContract(
+      name: "IRedemptionQueueSync",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IRedemptionQueueSync>;
     deployContract(
       name: "IRToken",
       args: any[],

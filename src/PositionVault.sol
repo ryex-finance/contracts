@@ -243,6 +243,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
         debt = newDebt;
         rToken.mint(owner, rBtcAmount); // D2: owner EOA
         emit RBTCMinted(address(this), rBtcAmount);
+        _notifyRedemptionQueue();
     }
 
     /// @notice 부채 상환 — owner EOA의 rBTC를 burn하고 Vault.debt 감소(mint의 역연산, docs/11 D4).
@@ -439,6 +440,10 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
         try IVaultFactory(factory).onCollateralChanged(delta) {} catch {}
     }
 
+    function _notifyRedemptionQueue() internal {
+        try IVaultFactory(factory).notifyVaultRedemptionCheck() {} catch {}
+    }
+
     // ── 수수료 적립 ──
 
     /// @notice 미상환 부채 달러가치에 대한 borrow fee(1.5%APR)를 USDC로 누적. debt 변경/정산 전 호출.
@@ -480,6 +485,7 @@ contract PositionVault is IPositionVault, Initializable, ReentrancyGuard {
         uint256 toRedeemer = recovered - fee;
         if (toRedeemer > 0) usdc.safeTransfer(redeemer, toRedeemer);
         emit Redeemed(address(this), redeemer, amt, recovered, fee);
+        _notifyRedemptionQueue();
     }
 
     function _cancelPendingRedeem() internal {

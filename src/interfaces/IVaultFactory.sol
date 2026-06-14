@@ -35,6 +35,12 @@ interface IVaultFactory {
     ///         isVault[msg.sender] 가드로 registered vault만 허용.
     function onCollateralChanged(int256 delta) external;
 
+    /// @notice 오라클 가격 갱신 후 해당 마켓 볼트 중 isRedeemable인 항목을 큐에 등록.
+    function syncRedemptionQueueForOracle(address oracle) external;
+
+    /// @notice Vault 상태 변경(mint/redeem 정산 등) 후 큐 동기화 — zone 진입 enqueue, 이탈 dequeue.
+    function notifyVaultRedemptionCheck() external;
+
     function totalCollateralLocked() external view returns (uint256);
 
     // 환경 주입 의존성 (하드코딩 금지)

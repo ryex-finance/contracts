@@ -26,20 +26,33 @@ import type {
 export interface MockPriceOracleInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "configureRedemptionSync"
       | "decimals"
       | "getPrice"
       | "owner"
+      | "redemptionSync"
       | "setPrice"
       | "transferOwnership"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "OwnerTransferred" | "PriceUpdated"
+    nameOrSignatureOrTopic:
+      | "OwnerTransferred"
+      | "PriceUpdated"
+      | "RedemptionSyncConfigured"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "configureRedemptionSync",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
   encodeFunctionData(functionFragment: "getPrice", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "redemptionSync",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "setPrice",
     values: [BigNumberish]
@@ -49,9 +62,17 @@ export interface MockPriceOracleInterface extends Interface {
     values: [AddressLike]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "configureRedemptionSync",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getPrice", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "redemptionSync",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setPrice", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
@@ -78,6 +99,18 @@ export namespace PriceUpdatedEvent {
   export interface OutputObject {
     oldPrice: bigint;
     newPrice: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RedemptionSyncConfiguredEvent {
+  export type InputTuple = [factory: AddressLike];
+  export type OutputTuple = [factory: string];
+  export interface OutputObject {
+    factory: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -128,11 +161,19 @@ export interface MockPriceOracle extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  configureRedemptionSync: TypedContractMethod<
+    [sync: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   decimals: TypedContractMethod<[], [bigint], "view">;
 
   getPrice: TypedContractMethod<[], [bigint], "view">;
 
   owner: TypedContractMethod<[], [string], "view">;
+
+  redemptionSync: TypedContractMethod<[], [string], "view">;
 
   setPrice: TypedContractMethod<[price8: BigNumberish], [void], "nonpayable">;
 
@@ -147,6 +188,9 @@ export interface MockPriceOracle extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "configureRedemptionSync"
+  ): TypedContractMethod<[sync: AddressLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "decimals"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -154,6 +198,9 @@ export interface MockPriceOracle extends BaseContract {
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "redemptionSync"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "setPrice"
@@ -175,6 +222,13 @@ export interface MockPriceOracle extends BaseContract {
     PriceUpdatedEvent.InputTuple,
     PriceUpdatedEvent.OutputTuple,
     PriceUpdatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RedemptionSyncConfigured"
+  ): TypedContractEvent<
+    RedemptionSyncConfiguredEvent.InputTuple,
+    RedemptionSyncConfiguredEvent.OutputTuple,
+    RedemptionSyncConfiguredEvent.OutputObject
   >;
 
   filters: {
@@ -198,6 +252,17 @@ export interface MockPriceOracle extends BaseContract {
       PriceUpdatedEvent.InputTuple,
       PriceUpdatedEvent.OutputTuple,
       PriceUpdatedEvent.OutputObject
+    >;
+
+    "RedemptionSyncConfigured(address)": TypedContractEvent<
+      RedemptionSyncConfiguredEvent.InputTuple,
+      RedemptionSyncConfiguredEvent.OutputTuple,
+      RedemptionSyncConfiguredEvent.OutputObject
+    >;
+    RedemptionSyncConfigured: TypedContractEvent<
+      RedemptionSyncConfiguredEvent.InputTuple,
+      RedemptionSyncConfiguredEvent.OutputTuple,
+      RedemptionSyncConfiguredEvent.OutputObject
     >;
   };
 }

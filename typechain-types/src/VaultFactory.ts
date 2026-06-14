@@ -57,9 +57,11 @@ export interface VaultFactoryInterface extends Interface {
       | "inRedemptionQueue"
       | "isVault"
       | "marketCount"
+      | "marketIdByOracle"
       | "marketIds"
       | "markets"
       | "nextRedeemable"
+      | "notifyVaultRedemptionCheck"
       | "onCollateralChanged"
       | "owner"
       | "pause"
@@ -71,6 +73,8 @@ export interface VaultFactoryInterface extends Interface {
       | "renounceOwnership"
       | "setGmxAdapter"
       | "sweepFees"
+      | "syncRedemptionQueue"
+      | "syncRedemptionQueueForOracle"
       | "totalCollateralLocked"
       | "totalRedeemableDebt"
       | "totalVaults"
@@ -78,6 +82,8 @@ export interface VaultFactoryInterface extends Interface {
       | "unpause"
       | "usdc"
       | "vaultOf"
+      | "vaultRegistryAt"
+      | "vaultRegistryLength"
   ): FunctionFragment;
 
   getEvent(
@@ -129,6 +135,10 @@ export interface VaultFactoryInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "marketIdByOracle",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "marketIds",
     values: [BigNumberish]
   ): string;
@@ -136,6 +146,10 @@ export interface VaultFactoryInterface extends Interface {
   encodeFunctionData(
     functionFragment: "nextRedeemable",
     values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "notifyVaultRedemptionCheck",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "onCollateralChanged",
@@ -173,6 +187,14 @@ export interface VaultFactoryInterface extends Interface {
     values: [AddressLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "syncRedemptionQueue",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "syncRedemptionQueueForOracle",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "totalCollateralLocked",
     values?: undefined
   ): string;
@@ -193,6 +215,14 @@ export interface VaultFactoryInterface extends Interface {
   encodeFunctionData(
     functionFragment: "vaultOf",
     values: [AddressLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "vaultRegistryAt",
+    values: [BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "vaultRegistryLength",
+    values: [BytesLike]
   ): string;
 
   decodeFunctionResult(functionFragment: "addMarket", data: BytesLike): Result;
@@ -222,10 +252,18 @@ export interface VaultFactoryInterface extends Interface {
     functionFragment: "marketCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "marketIdByOracle",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "marketIds", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "markets", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "nextRedeemable",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "notifyVaultRedemptionCheck",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -261,6 +299,14 @@ export interface VaultFactoryInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "sweepFees", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "syncRedemptionQueue",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "syncRedemptionQueueForOracle",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "totalCollateralLocked",
     data: BytesLike
   ): Result;
@@ -279,6 +325,14 @@ export interface VaultFactoryInterface extends Interface {
   decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "usdc", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "vaultOf", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "vaultRegistryAt",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "vaultRegistryLength",
+    data: BytesLike
+  ): Result;
 }
 
 export namespace MarketAddedEvent {
@@ -485,6 +539,8 @@ export interface VaultFactory extends BaseContract {
 
   marketCount: TypedContractMethod<[], [bigint], "view">;
 
+  marketIdByOracle: TypedContractMethod<[arg0: AddressLike], [string], "view">;
+
   marketIds: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
 
   markets: TypedContractMethod<
@@ -505,6 +561,8 @@ export interface VaultFactory extends BaseContract {
   >;
 
   nextRedeemable: TypedContractMethod<[marketId: BytesLike], [string], "view">;
+
+  notifyVaultRedemptionCheck: TypedContractMethod<[], [void], "nonpayable">;
 
   onCollateralChanged: TypedContractMethod<
     [delta: BigNumberish],
@@ -548,6 +606,18 @@ export interface VaultFactory extends BaseContract {
     "nonpayable"
   >;
 
+  syncRedemptionQueue: TypedContractMethod<
+    [marketId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
+  syncRedemptionQueueForOracle: TypedContractMethod<
+    [oracle: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   totalCollateralLocked: TypedContractMethod<[], [bigint], "view">;
 
   totalRedeemableDebt: TypedContractMethod<
@@ -571,6 +641,18 @@ export interface VaultFactory extends BaseContract {
   vaultOf: TypedContractMethod<
     [arg0: AddressLike, arg1: BytesLike],
     [string],
+    "view"
+  >;
+
+  vaultRegistryAt: TypedContractMethod<
+    [marketId: BytesLike, i: BigNumberish],
+    [string],
+    "view"
+  >;
+
+  vaultRegistryLength: TypedContractMethod<
+    [marketId: BytesLike],
+    [bigint],
     "view"
   >;
 
@@ -624,6 +706,9 @@ export interface VaultFactory extends BaseContract {
     nameOrSignature: "marketCount"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "marketIdByOracle"
+  ): TypedContractMethod<[arg0: AddressLike], [string], "view">;
+  getFunction(
     nameOrSignature: "marketIds"
   ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
   getFunction(
@@ -647,6 +732,9 @@ export interface VaultFactory extends BaseContract {
   getFunction(
     nameOrSignature: "nextRedeemable"
   ): TypedContractMethod<[marketId: BytesLike], [string], "view">;
+  getFunction(
+    nameOrSignature: "notifyVaultRedemptionCheck"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "onCollateralChanged"
   ): TypedContractMethod<[delta: BigNumberish], [void], "nonpayable">;
@@ -693,6 +781,12 @@ export interface VaultFactory extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "syncRedemptionQueue"
+  ): TypedContractMethod<[marketId: BytesLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "syncRedemptionQueueForOracle"
+  ): TypedContractMethod<[oracle: AddressLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "totalCollateralLocked"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -717,6 +811,16 @@ export interface VaultFactory extends BaseContract {
     [string],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "vaultRegistryAt"
+  ): TypedContractMethod<
+    [marketId: BytesLike, i: BigNumberish],
+    [string],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "vaultRegistryLength"
+  ): TypedContractMethod<[marketId: BytesLike], [bigint], "view">;
 
   getEvent(
     key: "MarketAdded"

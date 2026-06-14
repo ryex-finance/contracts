@@ -20,6 +20,7 @@ import {
   mintMaxRToken,
   pushToRedemptionZone,
   PRICE_ONE,
+  VAULT_FACTORY_ABI,
   readGmxPosition,
   readVaultRisk,
   repayAllDebt,
@@ -149,6 +150,14 @@ describe("rToken Redeem — RLT zone (Arbitrum Sepolia)", function () {
     expect(gmxAfter.sizeInUsd).to.be.lt(gmxBefore.sizeInUsd, "GMX sizeInUsd should decrease");
     expect(await vault.state()).to.equal(VaultState.Active);
     expect(await vault.pending()).to.satisfy((p: { kind: bigint }) => p.kind === 0n, "no pending order");
+
+    // LTV가 RLT 아래로 내려가면 큐에서 자동 제거
+    const factory = new ethers.Contract(deployment.vaultFactory, VAULT_FACTORY_ABI, ethers.provider);
+    const marketId = deployment.markets[MARKET_SYMBOL].marketId;
+    const rlt = await vault.rltBps();
+    expect(riskAfter.currentLtvBps).to.be.lt(rlt, "should leave RLT zone after 50% redeem");
+    expect(await factory.inRedemptionQueue(marketId, vaultAddr)).to.equal(false);
+    expect(await factory.redeemableCount(marketId)).to.equal(0n);
   });
 
   it("4. owner cannot block third-party redeem (non-owner succeeds)", async () => {

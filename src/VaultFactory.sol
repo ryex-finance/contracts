@@ -28,12 +28,14 @@ contract VaultFactory is IVaultFactory, Ownable, Pausable {
 
     mapping(bytes32 => Market) public markets; // marketId => 설정
     bytes32[] public marketIds; // 등록 순서(조회용)
+    mapping(address => bytes32) public marketIdByOracle; // oracle → marketId (가격 갱신 sync용)
+    mapping(bytes32 => address[]) internal _vaultRegistry; // marketId → 생성된 vault 목록
     mapping(address => mapping(bytes32 => address)) public vaultOf; // owner => marketId => vault
     mapping(address => bool) public isVault;
     uint256 public totalVaults;           // 누적 생성 볼트 수
     uint256 public totalCollateralLocked; // 전체 볼트 USDC collateral 합계 (6dec). Vault push 방식.
 
-    // RLT 상환 FIFO 큐 (마켓별). zone 진입 시 enqueue, redeemer는 front부터 처리(Litepaper §4.5).
+    // RLT 상환 FIFO 큐 (마켓별). zone 진입 시 자동/수동 enqueue (Litepaper §4.5).
     mapping(bytes32 => address[]) internal _redemptionQueue;
     mapping(bytes32 => mapping(address => bool)) public inRedemptionQueue; // marketId => vault => queued
 
@@ -92,6 +94,7 @@ contract VaultFactory is IVaultFactory, Ownable, Pausable {
             maxLeverage: risk.maxLeverage
         });
         marketIds.push(marketId);
+        marketIdByOracle[address(oracle)] = marketId;
         emit MarketAdded(marketId, address(oracle), rToken);
     }
 
@@ -113,6 +116,7 @@ contract VaultFactory is IVaultFactory, Ownable, Pausable {
         IPositionVault(vault).initialize(
             msg.sender, address(this), gmxAdapter, IPriceOracle(m.oracle), usdc, m.rToken, marketId, risk
         );
+        _vaultRegistry[marketId].push(vault);
         emit VaultCreated(msg.sender, marketId, vault);
     }
 
@@ -136,28 +140,111 @@ contract VaultFactory is IVaultFactory, Ownable, Pausable {
 
     // ── RLT 상환 큐 (Litepaper §4.5) — FIFO 순서 힌트. 실제 redeem은 Vault.redeem(zone 가드)에서. ──
 
+    /// @inheritdoc IVaultFactory
+    function syncRedemptionQueueForOracle(address oracle) external {
+        bytes32 marketId = marketIdByOracle[oracle];
+        if (marketId == bytes32(0) || !markets[marketId].active) return;
+        if (markets[marketId].oracle != oracle) return;
+        _syncRedemptionQueue(marketId);
+    }
+
+    /// @inheritdoc IVaultFactory
+    /// @dev mint 후 zone 진입 시 enqueue, redeem 정산 후 zone 이탈 시 dequeue.
+    function notifyVaultRedemptionCheck() external {
+        if (!isVault[msg.sender]) revert NoMarket();
+        _syncVaultInQueue(IPositionVault(msg.sender).marketId(), msg.sender);
+    }
+
+    function _syncVaultInQueue(bytes32 marketId, address vault) internal {
+        if (IPositionVault(vault).isRedeemable()) {
+            _tryEnqueue(marketId, vault, false);
+        } else {
+            _tryDequeueVault(marketId, vault);
+        }
+    }
+
+    function _tryDequeueVault(bytes32 marketId, address vault) internal {
+        if (!inRedemptionQueue[marketId][vault]) return;
+        address[] storage q = _redemptionQueue[marketId];
+        uint256 n = q.length;
+        for (uint256 i = 0; i < n; i++) {
+            if (q[i] == vault) {
+                _dequeueAt(marketId, i);
+                return;
+            }
+        }
+        inRedemptionQueue[marketId][vault] = false;
+    }
+
+    /// @notice 마켓 내 등록 볼트를 스캔해 상환존 진입분을 큐에 등록(permissionless).
+    function syncRedemptionQueue(bytes32 marketId) external {
+        if (!markets[marketId].active) revert NoMarket();
+        _syncRedemptionQueue(marketId);
+    }
+
+    function _syncRedemptionQueue(bytes32 marketId) internal {
+        _pruneStaleRedemptions(marketId);
+        address[] storage vaults = _vaultRegistry[marketId];
+        uint256 n = vaults.length;
+        for (uint256 i = 0; i < n; i++) {
+            _tryEnqueue(marketId, vaults[i], false);
+        }
+    }
+
+    /// @dev 상환존 이탈한 큐 항목 제거. setPrice sync 시 자동 호출.
+    function _pruneStaleRedemptions(bytes32 marketId) internal {
+        address[] storage q = _redemptionQueue[marketId];
+        uint256 i = 0;
+        while (i < q.length) {
+            if (!IPositionVault(q[i]).isRedeemable()) {
+                _dequeueAt(marketId, i);
+            } else {
+                i++;
+            }
+        }
+    }
+
+    function _dequeueAt(bytes32 marketId, uint256 index) internal {
+        address[] storage q = _redemptionQueue[marketId];
+        address vault = q[index];
+        inRedemptionQueue[marketId][vault] = false;
+        q[index] = q[q.length - 1];
+        q.pop();
+        emit RedemptionDequeued(marketId, vault);
+    }
+
     /// @notice 상환존에 든 Vault를 그 Vault의 마켓 FIFO 큐에 등록(permissionless).
-    /// @dev 마켓 불일치/비활성/중복을 방어(큐 poisoning 방지). dedup은 (marketId, vault)별.
     function enqueueRedemption(bytes32 marketId, address vault) external {
         if (!isVault[vault]) revert NoMarket();
         if (!markets[marketId].active) revert NoMarket();
         if (IPositionVault(vault).marketId() != marketId) revert MarketMismatch();
-        if (!IPositionVault(vault).isRedeemable()) revert NotRedeemable();
-        if (inRedemptionQueue[marketId][vault]) return; // 이미 큐에 존재 — 무시(중복 방지)
+        _tryEnqueue(marketId, vault, true);
+    }
+
+    function _tryEnqueue(bytes32 marketId, address vault, bool requireRedeemable) internal {
+        if (inRedemptionQueue[marketId][vault]) return;
+        if (!IPositionVault(vault).isRedeemable()) {
+            if (requireRedeemable) revert NotRedeemable();
+            return;
+        }
         inRedemptionQueue[marketId][vault] = true;
         _redemptionQueue[marketId].push(vault);
         emit RedemptionEnqueued(marketId, vault);
     }
 
+    function vaultRegistryLength(bytes32 marketId) external view returns (uint256) {
+        return _vaultRegistry[marketId].length;
+    }
+
+    function vaultRegistryAt(bytes32 marketId, uint256 i) external view returns (address) {
+        return _vaultRegistry[marketId][i];
+    }
+
     /// @notice 더 이상 상환 불가한 Vault를 큐에서 제거(permissionless, swap-pop). 플래그 해제 → 재진입 시 재등록 가능.
     function pruneRedemption(bytes32 marketId, uint256 index) external {
         address[] storage q = _redemptionQueue[marketId];
-        address vault = q[index];
-        if (IPositionVault(vault).isRedeemable()) revert StillRedeemable(); // 여전히 상환 가능하면 제거 불가
-        inRedemptionQueue[marketId][vault] = false;
-        q[index] = q[q.length - 1];
-        q.pop();
-        emit RedemptionDequeued(marketId, vault);
+        if (IPositionVault(q[index]).isRedeemable()) revert StillRedeemable();
+        _dequeueAt(marketId, index);
     }
 
     /// @notice FIFO 큐에서 아직 상환 가능한 첫 Vault(없으면 0). redeemer가 이걸 redeem.

@@ -165,6 +165,13 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "notifyVaultRedemptionCheck",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "int256",
@@ -188,6 +195,19 @@ const _abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "oracle",
+        type: "address",
+      },
+    ],
+    name: "syncRedemptionQueueForOracle",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {

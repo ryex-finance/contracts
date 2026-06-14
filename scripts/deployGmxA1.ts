@@ -160,6 +160,9 @@ async function main() {
       maxLtvBps: mkt.risk.maxLtv1xBps,
       lltvBps:   mkt.risk.maxLtv1xBps + mkt.risk.bufferBps,
     };
+
+    // oracle setPrice → factory RLT 큐 자동 sync
+    await (await oracle.configureRedemptionSync(await factory.getAddress())).wait();
   }
 
   // ── 5. RLT-redeem 버퍼 USDC 전송 ─────────────────────────────────────────

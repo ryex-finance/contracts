@@ -30,8 +30,10 @@ export interface IVaultFactoryInterface extends Interface {
       | "gmxAdapter"
       | "isVault"
       | "markets"
+      | "notifyVaultRedemptionCheck"
       | "onCollateralChanged"
       | "paused"
+      | "syncRedemptionQueueForOracle"
       | "totalCollateralLocked"
       | "usdc"
       | "vaultOf"
@@ -55,10 +57,18 @@ export interface IVaultFactoryInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "markets", values: [BytesLike]): string;
   encodeFunctionData(
+    functionFragment: "notifyVaultRedemptionCheck",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "onCollateralChanged",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "paused", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "syncRedemptionQueueForOracle",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "totalCollateralLocked",
     values?: undefined
@@ -77,10 +87,18 @@ export interface IVaultFactoryInterface extends Interface {
   decodeFunctionResult(functionFragment: "isVault", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "markets", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "notifyVaultRedemptionCheck",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "onCollateralChanged",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "syncRedemptionQueueForOracle",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "totalCollateralLocked",
     data: BytesLike
@@ -195,6 +213,8 @@ export interface IVaultFactory extends BaseContract {
     "view"
   >;
 
+  notifyVaultRedemptionCheck: TypedContractMethod<[], [void], "nonpayable">;
+
   onCollateralChanged: TypedContractMethod<
     [delta: BigNumberish],
     [void],
@@ -202,6 +222,12 @@ export interface IVaultFactory extends BaseContract {
   >;
 
   paused: TypedContractMethod<[], [boolean], "view">;
+
+  syncRedemptionQueueForOracle: TypedContractMethod<
+    [oracle: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   totalCollateralLocked: TypedContractMethod<[], [bigint], "view">;
 
@@ -245,11 +271,17 @@ export interface IVaultFactory extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "notifyVaultRedemptionCheck"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "onCollateralChanged"
   ): TypedContractMethod<[delta: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "paused"
   ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "syncRedemptionQueueForOracle"
+  ): TypedContractMethod<[oracle: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "totalCollateralLocked"
   ): TypedContractMethod<[], [bigint], "view">;

@@ -8,6 +8,7 @@ export { IGmxReader__factory } from "./IGmxReader__factory";
 export { IPositionVault__factory } from "./IPositionVault__factory";
 export { IPriceOracle__factory } from "./IPriceOracle__factory";
 export { IRToken__factory } from "./IRToken__factory";
+export { IRedemptionQueueSync__factory } from "./IRedemptionQueueSync__factory";
 export { IRyexSwapPool__factory } from "./IRyexSwapPool__factory";
 export { IShortPerp__factory } from "./IShortPerp__factory";
 export { IVaultFactory__factory } from "./IVaultFactory__factory";
