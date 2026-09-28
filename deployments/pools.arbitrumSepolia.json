@@ -1,0 +1,14 @@
+{
+  "network": "arbitrumSepolia",
+  "signer": "0xF48b7D0Ba65a8DBC7ecaA6fE983078ecd73a470E",
+  "fee": 3000,
+  "skipLiquidity": true,
+  "rToken": "0x626921D9708506d131B4b369BF35e20371f776eF",
+  "lpZap": "0x9AFAFb7979ead0e2f3fA0E0EF508b9a8A8051F49",
+  "prices": {
+    "rETH/USDC": 2426.2241
+  },
+  "pools": {
+    "rETH/USDC": "0x8B619001B55Eb4Bb7CC86Cc8c3C6750E897C63CC"
+  }
+}

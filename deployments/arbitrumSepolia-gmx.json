@@ -1,0 +1,46 @@
+{
+  "profile": "arbitrumSepolia-gmx",
+  "chainId": 421614,
+  "vaultFactory": "0xbF09D5104464Ad767642cAD87C6C2C66862bDa42",
+  "ryexTreasury": "0xD8aC91d8F8F44A1E3196383D8e538726A18F31d6",
+  "ryexRouter": "0xf11a72F10a33CE782e0084C3D90D4E8F6Dd55d0d",
+  "positionVaultImpl": "0x4A4c2e8672A4002E22300A38BDa490D261116142",
+  "gmxIntegrationReader": "0x3da3Cc0305BF6767CF0d506d0C65135313f0D1D2",
+  "gmxOrderBuilder": "0x29B018185c695c56699B6905BBdC6F55B4C23c79",
+  "gmxExecutor": "0xC57Bf8CB401F7253973ec333Bd08Bab1908F05A2",
+  "debtSettler": "0xbCD9d8168942C5afA017f96ac3164efeb6bc9A0f",
+  "vaultSettle": "0x2f21a9a73fbdb78eB7de12494932a1CD0c4930e5",
+  "vaultLens": "0x085295369391B9709Ae07BAFC63CCB150F033A54",
+  "usdc": "0x3253a335E7bFfB4790Aa4C25C4250d206E9b9773",
+  "gmxExchangeRouter": "0x6B489dD5bB1AAE8df246359d59aA7316760a75d2",
+  "gmxReader": "0x4750376b9378294138Cf7B7D69a2d243f4940f71",
+  "gmxDataStore": "0xCF4c2C4c53157BcC01A596e3788fFF69cBBCD201",
+  "gmxOrderVault": "0x1b8AC606de71686fd2a1AEDEcb6E0EFba28909a2",
+  "swapRouter": "0x8d7bb3198C0C84eB90cc765c334D178f8a399d70",
+  "swapFee": 3000,
+  "markets": {
+    "rETH": {
+      "marketId": "0xfa2f5443c5162620a75653c3715645203733476b53f20f277072022ebb01c40a",
+      "oracle": "0x421B404CaA6328B5319cB8257bE1F0adb5f42293",
+      "rToken": "0x626921D9708506d131B4b369BF35e20371f776eF",
+      "gmxMarket": "0xb6fC4C9eB02C35A134044526C62bb15014Ac0Bcc",
+      "maxLtvBps": 6500,
+      "lltvBps": 7500,
+      "borrowAprBps": 150,
+      "pool": "0x8B619001B55Eb4Bb7CC86Cc8c3C6750E897C63CC"
+    }
+  },
+  "lpZap": "0x9AFAFb7979ead0e2f3fA0E0EF508b9a8A8051F49",
+  "ryieldRegistry": "0xefb4EbF43Ae33342D22D9d3A30f6E68bb899A6D5",
+  "ryieldViews": "0x4E8BDa73612A82e68B409FeCE721dd26617e901e",
+  "ryieldVaults": {
+    "rETH": "0x28bf56AB32cc61Be56C9aD02719F5464598bD72D"
+  },
+  "ryieldFundingDistributors": {
+    "rETH": "0xB0781DE37aE6eF9a3aC98A60E030B46600130D3B"
+  },
+  "ammTwap": "0xd2a80f3eE786DB1a9797B364464c4c2c05094Bd6",
+  "gmxFundingUtils": "0x329A4433b03ce21EAB72c8a3FdD35D14acF0Ca49",
+  "gmxFundingAccruedView": "0x33642Bedf59F53501BC7525c3f1b8bDEca75e6E8",
+  "updatedAt": "2026-09-25T13:23:21.571Z"
+}
